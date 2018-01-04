@@ -1,0 +1,356 @@
+<!-- TODO:
+1. delete css and js before finished.
+-->
+<div class="container">
+  <!-- stock search part -->
+  <div class="jumbotron">
+    <h3 align="center">Stock Market Search</h3><br>
+    <label for="stockSymbol" class="col-md-3 col-sm-12 control-label">
+      Enter Stock Ticker Symbol:<label style="color: red">*</label>
+    </label>
+    <div class="col-md-6 col-sm-12">
+      <input type="text" class="form-control" id="stockSymbol" [ngClass]="{'red-input': !inputValid }"
+             placeholder="e.g. AAPL" (keyup)="autoComplete()"
+             [(ngModel)]="stockSymbol" (blur)="validationCheck()" [matAutocomplete]="auto">
+      <div *ngIf="!inputValid">Please enter a stock ticker symbol.</div>
+      <mat-autocomplete #auto="matAutocomplete">
+        <mat-option *ngFor="let option of options" [value]="option.Symbol">
+          {{ option.Symbol }} - {{ option.Name }} ( {{ option.Exchange }} )
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+    <div class="col-md-3 col-sm-12">
+      <button type="button" class="btn btn-primary" (click)="getQuote()" [disabled]="quoteDisable">
+        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+        Get Quote
+      </button>
+      <button type="button" class="btn btn-default" (click)="clear()">
+        <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+        Clear
+      </button>
+    </div>
+  </div>
+  <hr>
+
+  <!--info panel part-->
+  <div class="jumbotron" style="overflow: hidden">
+
+    <!--favorite list part-->
+    <div class="panel panel-default" [style.display]="leftDisplay" [@stepTransition]="left">
+
+      <div class="panel-heading">
+        <b class="col-sm-8">Favorit List</b>
+        <label class="visible-md visible-lg col-sm-2" for="auto-refresh">Automatic Refresh:</label>
+        <div style="display: inline" (click)="setAutoRefresh($event);">
+          <input type="checkbox" id="auto-refresh" data-toggle="toggle">
+        </div>
+        <button type="button" class="btn btn-default" (click)="refreshOnce();">
+          <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-default" (click)="moveRight();" [disabled]="isEmpty(currentStock)">
+          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <form class="form-horizontal">
+        <div class="form-group col-sm-4">
+          <label for="sortBy" class="col-sm-3 control-label">Sort By</label>
+          <div class="col-sm-9">
+            <select class="form-control" (change)="sortFavorites()" id="sortBy" name="sortBy">
+              <option selected value="default">Default</option>
+              <option value="symbol">Symbol</option>
+              <option value="price">Price</option>
+              <option value="change">Change</option>
+              <option value="percent">Change Percent</option>
+              <option value="volume">Volume</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group col-sm-4">
+          <label for="order" class="col-sm-3 control-label">Order</label>
+          <div class="col-sm-9">
+            <select class="form-control" [disabled]="ascendDisable" (change)="sortFavorites()" id="order"
+                    [(ngModel)]="ascend" name="ascend">
+              <option selected value="true">Ascending</option>
+              <option value="false">Descending</option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <div class="table-responsive" style="width: 100%">
+        <table class="table table-striped">
+          <tr>
+            <th>Symbol</th>
+            <th>Stock Price</th>
+            <th>Change(Change Price)</th>
+            <th>Volume</th>
+            <th></th>
+          </tr>
+          <tr *ngFor="let row of favoriteList">
+            <td><a (click)="moveTo(row.symbol)">{{row.symbol}}</a></td>
+            <td>{{row.price.toFixed(2)}}</td>
+            <td [ngClass]="{'change-up': row.change >= 0, 'change-down': row.change < 0 }">
+              {{row.change.toFixed(2)}}({{row.percent.toFixed(2)}}%)
+              <div *ngIf="row.change >= 0">
+                <img src="http://cs-server.usc.edu:45678/hw/hw8/images/Up.png">
+              </div>
+              <div *ngIf="row.change < 0">
+                <img src="http://cs-server.usc.edu:45678/hw/hw8/images/Down.png">
+              </div>
+            </td>
+            <td>{{row.volume.toLocaleString()}}</td>
+            <td>
+              <button type="button" class="btn btn-default" (click)="deleteRow(row)">
+                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+              </button>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!--stock details part-->
+    <div class="panel panel-default" [style.display]="rightDisplay" [@stepTransition]="right">
+      <div class="panel-heading">
+        <div class="row">
+          <div class="col-sm-1" style="display: inline">
+            <button type="button" class="btn btn-default" (click)="moveLeft();">
+              <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="col-sm-offset-4 col-sm-6" style="display: inline">
+            <b>Stock Detail</b>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 20px">
+
+        <!--tab title-->
+        <ul class="nav nav-pills">
+          <li role="presentation" class="active">
+            <a class="visible-md visible-lg" href="#current" data-toggle="tab">
+              <span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span>
+              Current Stock
+            </a>
+            <a class="visible-xs visible-sm" href="#current" data-toggle="tab">
+              <span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span>
+              Current
+            </a>
+          </li>
+          <li role="presentation">
+            <a class="visible-md visible-lg" href="#history" data-toggle="tab">
+              <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+              Historical Charts
+            </a>
+            <a class="visible-xs visible-sm" href="#history" data-toggle="tab">
+              <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+              Charts
+            </a>
+          </li>
+          <li role="presentation">
+            <a class="visible-md visible-lg" href="#news" data-toggle="tab">
+              <span class="glyphicon glyphicon-link" aria-hidden="true"></span>
+              News Feeds
+            </a>
+            <a class="visible-xs visible-sm" href="#news" data-toggle="tab">
+              <span class="glyphicon glyphicon-link" aria-hidden="true"></span>
+              News
+            </a>
+          </li>
+        </ul>
+        <hr>
+
+        <div class="tab-content">
+          <!-- 1 Current Stock  -->
+          <div class="tab-pane active" id="current">
+            <div class="container">
+
+              <!--left table-->
+              <div class="col-md-6 col-sm-12" style="padding-left: 0;padding-right: 0">
+                <div class="row" style="padding-bottom: 10px">
+                  <div class="col-sm-9" style="display: inline;padding-left: 36px;">
+                    <b style="left:10px">Stock Details</b>
+                  </div>
+                  <div class="col-sm-3" style="display: inline">
+                    <button type="button" class="btn btn-default plain" (click)="addToFavorite()"
+                            [disabled]="currentStock['table'] === undefined || currentStock['table']['error'] === true">
+                      <span *ngIf="currentStock['favorite'] && currentStock['favorite'] == true"
+                            class="glyphicon glyphicon-star" style="color: #fed531;" aria-hidden="true"></span>
+                      <span *ngIf="!currentStock['favorite'] || currentStock['favorite'] == false"
+                            class="glyphicon glyphicon-star-empty" aria-hidden="true"></span>
+                    </button>
+                    <button type="button" class="btn btn-default plain" (click)="shareOnFacebook()"
+                            [disabled]="!currentStock['table'] || currentStock['table']['error'] === true">
+                      <!--<span class="fa fa-facebook-square" aria-hidden="true">fb</span>-->
+                      <img width="20" src="http://cs-server.usc.edu:45678/hw/hw8/images/facebook.png">
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="currentStock['table'] === undefined" class="col-sm-12 progress-container">
+                  <br><br>
+                  <div class="progress">
+                    <div class="progress-bar progress-bar-striped active" style="width: 50%"></div>
+                  </div>
+                </div>
+
+                <div class="col-sm-12" *ngIf="currentStock['table'] && currentStock['table']['error'] === true">
+                  <br><br>
+                  <div class="visible-md visible-lg">
+                    <br><br>
+                  </div>
+                  <div class="alert alert-danger" role="alert">
+                    Erorr! Failed to get current stock data.
+                  </div>
+                </div>
+
+                <div *ngIf="currentStock['table'] && currentStock['table']['error'] !== true" style="padding-top: 10px">
+                  <table class="table table-striped" *ngIf="currentStock">
+                    <tr>
+                      <th>Stock Ticker Symbol</th>
+                      <td>{{currentStock['table']['symbol']}}</td>
+                    </tr>
+                    <tr>
+                      <th>Last Price</th>
+                      <td>{{currentStock['table']['price'].toFixed(2)}}</td>
+                    </tr>
+                    <tr>
+                      <th>Change (Change Percent)</th>
+                      <td>
+                        <div *ngIf="currentStock['table']['change'] >= 0" class="change-up">
+                          {{currentStock['table']['change'].toFixed(2)}}
+                          ({{currentStock['table']['percent'].toFixed(2)}}%)
+                          <img src="http://cs-server.usc.edu:45678/hw/hw8/images/Up.png">
+                        </div>
+                        <div *ngIf="currentStock['table']['change'] < 0" class="change-down">
+                          {{currentStock['table']['change'].toFixed(2)}}
+                          ({{currentStock['table']['percent'].toFixed(2)}}%)
+                          <img src="http://cs-server.usc.edu:45678/hw/hw8/images/Down.png">
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>TimeStamp</th>
+                      <td>{{currentStock['table']['time']}}</td>
+                    </tr>
+                    <tr>
+                      <th>Open</th>
+                      <td>{{currentStock['table']['open'].toFixed(2)}}</td>
+                    </tr>
+                    <tr>
+                      <th>Close</th>
+                      <td>{{currentStock['table']['close'].toFixed(2)}}</td>
+                    </tr>
+                    <tr>
+                      <th>Day’s Range</th>
+                      <td>{{currentStock['table']['range']}}</td>
+                    </tr>
+                    <tr>
+                      <th>Volume</th>
+                      <td>{{currentStock['table']['volume'].toLocaleString()}}</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+
+              <!--right chart-->
+              <div class="col-sm-6" style="padding-left: 0;padding-right: 0">
+                <ul class="nav nav-tabs" id="indicator">
+                  <li role="presentation" class="active"><a (click)="changeTo('price')" data-toggle="tab">Price</a></li>
+                  <li role="presentation"><a (click)="changeTo('sma')" data-toggle="tab">SMA</a></li>
+                  <li role="presentation"><a (click)="changeTo('ema')" data-toggle="tab">EMA</a></li>
+                  <li role="presentation"><a (click)="changeTo('stoch')" data-toggle="tab">STOCH</a></li>
+                  <li role="presentation"><a (click)="changeTo('rsi')" data-toggle="tab">RSI</a></li>
+                  <li role="presentation"><a (click)="changeTo('adx')" data-toggle="tab">ADX</a></li>
+                  <li role="presentation"><a (click)="changeTo('cci')" data-toggle="tab">CCI</a></li>
+                  <li role="presentation"><a (click)="changeTo('bbands')" data-toggle="tab">BBANDS</a></li>
+                  <li role="presentation"><a (click)="changeTo('macd')" data-toggle="tab">MACD</a></li>
+                </ul>
+                <div class="tab-content">
+                  <div class="tab-pane active" [id]="ind">
+                    <div *ngIf="currentStock[ind] === undefined" class="col-sm-12 progress-container">
+                      <div class="progress">
+                        <div class="progress-bar progress-bar-striped active" style="width: 50%"></div>
+                      </div>
+                    </div>
+                    <div class="col-sm-12" *ngIf="currentStock[ind] && currentStock[ind].error === true">
+                      <br><br>
+                      <div class="alert alert-danger" role="alert">
+                        Erorr! Failed to get {{ind}} data.
+                      </div>
+                    </div>
+                    <div *ngIf="currentStock[ind] && currentStock[ind].error !== true">
+                      <chart class="absolute" [options]="currentStock[ind]"></chart>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 Historical Chart -->
+          <div class="tab-pane" id="history">
+            <div class="container">
+              <div *ngIf="currentStock['historical'] === undefined" class="col-sm-12 progress-container">
+                <div class="progress">
+                  <div class="progress-bar progress-bar-striped active" style="width: 50%"></div>
+                </div>
+              </div>
+
+              <div class="col-sm-12" *ngIf="currentStock['historical'] && currentStock['historical']['error'] === true">
+                <br><br>
+                <div class="alert alert-danger" role="alert">
+                  Erorr! Failed to get historical charts data.
+                </div>
+              </div>
+
+              <div *ngIf="currentStock['historical'] && currentStock['historical']['error'] !== true">
+                <chart type="StockChart" [options]="currentStock['historical']"></chart>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 News -->
+          <div class="tab-pane" id="news">
+            <div class="container">
+              <div *ngIf="currentStock['news'] === undefined" class="col-sm-12 progress-container">
+                <div class="progress">
+                  <div class="progress-bar progress-bar-striped active" style="width: 50%"></div>
+                </div>
+              </div>
+
+              <div class="col-sm-12" *ngIf="currentStock['news'] && currentStock['news']['error'] === true">
+                <br><br>
+                <div class="alert alert-danger" role="alert">
+                  Erorr! Failed to get news data.
+                </div>
+              </div>
+
+              <div class="col-sm-12" *ngIf="currentStock['news'] && currentStock['news']['length'] === 0">
+                <br><br>
+                <div class="alert alert-danger" role="alert">
+                  There is no news.
+                </div>
+              </div>
+
+              <div *ngIf="currentStock['news'] && currentStock['news'].error !== true">
+                <div *ngFor="let article of currentStock.news">
+                  <div class="well">
+                    <a target="_blank" href={{article.link}}><p style="font-weight: 500;">{{article.title}}</p></a>
+                    <b>Author: {{article.author}}</b><br>
+                    <b>Date: {{article.date}}</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+

@@ -1,0 +1,77 @@
+.jumbotron {
+  margin: auto;
+  border-radius: 1rem;
+  background-color: white;
+  padding: 20px 0 65px 0;
+}
+
+.control-label {
+  text-align: left;
+}
+
+form {
+  padding-top: 5px;
+}
+
+.jumbotron .panel {
+  width: 96%;
+  margin: auto;
+}
+
+.red-input {
+  border: 2px solid red;
+}
+
+.panel table {
+  width: 95%;
+  margin: auto;
+  margin-bottom: 20px
+}
+
+.change-up {
+  color: #5be122;
+}
+
+.change-down {
+  color: red;
+}
+
+
+td img {
+  height: 15px;
+}
+
+td div {
+  display: inline;
+}
+
+
+.progress-container {
+  padding-top: 150px;
+  padding-bottom: 150px;
+}
+
+chart {
+  display: block;
+  width: 100%;
+}
+
+button.plain, .well {
+  background-image: none;
+}
+
+.panel form {
+  padding: 15px 25px 15px 25px;
+}
+
+@media (max-width:500px) {
+  .panel form select{
+    background-image: -webkit-linear-gradient(top,#fff 0,#e0e0e0 100%);
+    background-image: -o-linear-gradient(top,#fff 0,#e0e0e0 100%);
+    background-image: -webkit-gradient(linear,left top,left bottom,from(#fff),to(#e0e0e0));
+    background-image: linear-gradient(to bottom,#fff 0,#e0e0e0 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe0e0e0', GradientType=0);
+    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+    background-repeat: repeat-x;
+  }
+}
