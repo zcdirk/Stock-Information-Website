@@ -1,0 +1,24 @@
+{
+  "name": "back-end",
+  "version": "1.0.0",
+  "description": "The back end of Stock Search Web",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "stock",
+    "search"
+  ],
+  "author": "Chi Zhang",
+  "dependencies": {
+    "body-parser": "latest",
+    "express": "latest",
+    "http": "latest",
+    "https": "latest",
+    "moment": "^2.19.1",
+    "moment-timezone": "^0.5.14",
+    "request": "^2.83.0",
+    "xml2js": "latest"
+  }
+}
