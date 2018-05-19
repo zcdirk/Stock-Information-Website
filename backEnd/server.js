@@ -5,7 +5,6 @@ var https = require('https');
 var parseString = require('xml2js').parseString;
 var moment = require('moment');
 var momentTZ = require('moment-timezone');
-var request = require('request');
 
 var app = express();
 

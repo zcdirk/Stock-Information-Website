@@ -2,7 +2,7 @@
 @import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
 
 body {
-  background-image: url("http://cs-server.usc.edu:45678/hw/hw8/images/background.png");
+  background-image: url("http://www-scf.usc.edu/~zhan468/public/assets/images/background.webp");
 }
 
 app-root {
